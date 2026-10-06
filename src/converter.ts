@@ -4,6 +4,7 @@ import { ConverterSettingDefinition } from './utils/converterSettingsUtils';
 
 export interface ConversionResult {
   markdown?: string;
+  html?: string;
   images?: { [key: string]: string };
   metadata?: { [key: string]: any };
   success: boolean;
@@ -13,12 +14,18 @@ export interface ConversionResult {
 export interface Converter {
   convert(app: App, settings: MarkerSettings, file: TFile): Promise<boolean>;
   testConnection(settings: MarkerSettings, silent?: boolean): Promise<boolean>;
-  getConverterSettings(): ConverterSettingDefinition[]; // New method
+  getConverterSettings?(): ConverterSettingDefinition[];
+  renderSettings?(
+    containerEl: HTMLElement,
+    settings: MarkerSettings,
+    saveSettings: () => Promise<void>
+  ): void;
 }
 
 import {
   addMetadataToMarkdownFile,
   createConversionFolder,
+  createHtmlFile,
   createImageFiles,
   createMarkdownFile,
   deleteOriginalFile,
@@ -38,7 +45,8 @@ export abstract class BaseConverter implements Converter {
     silent?: boolean
   ): Promise<boolean>;
 
-  abstract getConverterSettings(): ConverterSettingDefinition[];
+  // Subclasses provide either getConverterSettings (generic rows) or
+  // renderSettings (custom UI)
 
   protected async prepareConversion(
     settings: MarkerSettings,
@@ -77,6 +85,21 @@ export abstract class BaseConverter implements Converter {
           app,
           settings,
           data.markdown,
+          folderPath,
+          originalFile
+        );
+      }
+
+      // Save the HTML output when requested (required for block ids/bboxes)
+      if (
+        settings.saveHtmlOutput &&
+        settings.extractContent !== 'images' &&
+        data.html
+      ) {
+        await createHtmlFile(
+          app,
+          settings,
+          data.html,
           folderPath,
           originalFile
         );

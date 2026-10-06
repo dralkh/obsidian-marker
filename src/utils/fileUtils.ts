@@ -12,26 +12,18 @@ export async function getConversionFolderPath(
   return folderPath;
 }
 
-// Helper function to calculate the folder path
+// Helper function to calculate the folder path. Every converted document gets
+// its own subfolder next to the original file, regardless of its file type.
 function calculateFolderPath(file: TFile): string {
-  const folderName = file.path
-    .replace(/\.pdf(?=[^.]*$)/, '')
-    .split('/')
-    .pop()
-    ?.replace(/\./g, '-');
+  const folderName = file.name
+    .replace(/\.[^.]+$/, '')
+    .replace(/\./g, '-');
 
   if (!folderName) {
     return '';
   }
 
-  const folderPath =
-    file.path
-      .replace(/\.pdf(?=[^.]*$)/, '/')
-      .split('/')
-      .slice(0, -1)
-      .join('/') + '/';
-
-  return folderPath;
+  return file.path.replace(/[^/]+$/, `${folderName}/`);
 }
 
 export async function createConversionFolder(
@@ -79,8 +71,7 @@ export async function createImageFiles(
     try {
       let newImageName = imageName;
       if (settings.createAssetSubfolder) {
-        newImageName =
-          originalFile.name.replace(/\.pdf(?=[^.]*$)/, '_') + imageName;
+        newImageName = getImagePrefix(originalFile) + imageName;
       }
       const imageArrayBuffer = base64ToArrayBuffer(imageBase64);
       // check if image already exists, if so, overwrite it
@@ -129,24 +120,22 @@ export async function createMarkdownFile(
   folderPath: string,
   originalFile: TFile
 ) {
-  const fileName = originalFile.name.split('.')[0] + '.md';
+  const fileName = originalFile.basename + '.md';
   const filePath = folderPath + fileName;
   let file: TFile;
 
   // change markdown image links when asset subfolder is created
   if (settings.createAssetSubfolder) {
-    const cleanImagePath = originalFile.name
-      .replace(/\.pdf(?=[^.]*$)/, '_')
-      .replace(/\s+/g, '%20');
+    const cleanImagePath = getCleanImagePath(originalFile);
 
     markdown = markdown.replace(
-      /!\[.*\]\((.*)\)/g,
-      `![$1](assets/${cleanImagePath}$1)`
+      /!\[([^\]]*)\]\(([^)]+)\)/g,
+      `![$1](assets/${cleanImagePath}$2)`
     );
   }
-  // remove images when only text is extracted
-  if (settings.extractContent === 'text') {
-    markdown = markdown.replace(/!\[.*\]\(.*\)/g, '');
+  // remove images when only text is extracted or image extraction is disabled
+  if (settings.extractContent === 'text' || settings.disableImageExtraction) {
+    markdown = markdown.replace(/!\[[^\]]*\]\([^)]+\)/g, '');
   }
 
   const existingFile = app.vault.getAbstractFileByPath(filePath);
@@ -160,13 +149,57 @@ export async function createMarkdownFile(
   app.workspace.openLinkText(file.path, '', true);
 }
 
+export async function createHtmlFile(
+  app: App,
+  settings: MarkerSettings,
+  html: string,
+  folderPath: string,
+  originalFile: TFile
+) {
+  const fileName = originalFile.basename + '.html';
+  const filePath = folderPath + fileName;
+
+  // change image links when asset subfolder is created
+  if (settings.createAssetSubfolder) {
+    const cleanImagePath = getCleanImagePath(originalFile);
+    html = html.replace(
+      /(<img[^>]+src=["'])([^"']+)(["'])/g,
+      (match, prefix: string, src: string, suffix: string) => {
+        if (/^(https?:|data:)/i.test(src)) return match;
+        return `${prefix}assets/${cleanImagePath}${src}${suffix}`;
+      }
+    );
+  }
+
+  // remove images when only text is extracted or image extraction is disabled
+  if (settings.extractContent === 'text' || settings.disableImageExtraction) {
+    html = html.replace(/<img[^>]*>/gi, '');
+  }
+
+  const existingFile = app.vault.getAbstractFileByPath(filePath);
+  if (existingFile instanceof TFile) {
+    await app.vault.modify(existingFile, html);
+  } else {
+    await app.vault.create(filePath, html);
+  }
+  new Notice(`HTML file created: ${fileName}`);
+}
+
+function getImagePrefix(originalFile: TFile): string {
+  return originalFile.basename + '_';
+}
+
+function getCleanImagePath(originalFile: TFile): string {
+  return getImagePrefix(originalFile).replace(/\s+/g, '%20');
+}
+
 export async function addMetadataToMarkdownFile(
   app: App,
   metadata: { [key: string]: any },
   folderPath: string,
   originalFile: TFile
 ) {
-  const fileName = originalFile.name.split('.')[0] + '.md';
+  const fileName = originalFile.basename + '.md';
   const filePath = folderPath + fileName;
   const file = app.vault.getAbstractFileByPath(filePath);
   if (file instanceof TFile) {
@@ -184,7 +217,15 @@ export async function addMetadataToMarkdownFile(
 
 function generateFrontmatter(metadata: { [key: string]: any }): string {
   let frontmatter = '---\n';
-  const frontmatterKeys = ['languages', 'filetype', 'ocr_stats', 'block_stats'];
+  const frontmatterKeys = [
+    'languages',
+    'filetype',
+    'ocr_stats',
+    'block_stats',
+    'failed_pages',
+    'pdf_bookmarks',
+    'pdf_bookmarks_truncated',
+  ];
   for (const [key, value] of Object.entries(metadata)) {
     if (frontmatterKeys.includes(key)) {
       if (key === 'ocr_stats' || key === 'block_stats') {
@@ -195,6 +236,8 @@ function generateFrontmatter(metadata: { [key: string]: any }): string {
               : v
           }\n`;
         }
+      } else if (value !== null && typeof value === 'object') {
+        frontmatter += `${key}: ${JSON.stringify(value)}\n`;
       } else {
         frontmatter += `${key}: ${value}\n`;
       }
@@ -207,7 +250,7 @@ function generateFrontmatter(metadata: { [key: string]: any }): string {
 export async function deleteOriginalFile(app: App, file: TFile) {
   try {
     await app.fileManager.trashFile(file);
-    new Notice('Original PDF file deleted');
+    new Notice('Original file deleted');
   } catch (error) {
     console.error('Error deleting original file:', error);
   }

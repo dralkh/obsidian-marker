@@ -26,6 +26,7 @@ You can find the related repositories and services here:
 - **Formula Detection**: Accurately captures and converts mathematical formulas
 - **Table Extraction**: Preserves table structures in your Markdown output
 - **Image Handling**: Extracts and saves images from your PDFs and includes them in the markdown
+- **Full Datalab option coverage**: Processing modes (Fast/Balanced/Accurate), extras (track changes, chart understanding, infographics, links, bookmarks), cross-page merging, eval rubrics, bounding boxes and optional HTML output
 - **Batch Processing**: Convert multiple PDFs at once by selecting files with Alt + Click (Note: Processing multiple files may take considerable time depending on their size and complexity)
 - **Mobile Compatibility**: Works on both desktop and mobile Obsidian apps
 - **Flexible Output**: Choose between full content extraction or specific elements (text/images)
@@ -90,6 +91,7 @@ You can convert PDFs to Markdown in multiple ways:
 
 ## ⚙️ Settings
 
+### General
 
 | Setting                     | Default          | Description                                                                                                                                                |
 | ----------------------------- | ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
@@ -98,9 +100,9 @@ You can convert PDFs to Markdown in multiple ways:
 | **Python API Endpoint**     | 'localhost:8001' | The endpoint to use for the Python API. Only shown when 'Python Local API' or 'Python Cloud API' is selected as the API endpoint.                            |
 | **Datalab API Key**          | -                | Enter your Datalab API key. Only shown when 'Datalab' is selected as the API endpoint.                                                           |
 | **MistralAI API Key**       | -                | Enter your MistralAI API key. Only shown when 'MistralAI' is selected as the API endpoint.                                                     |
-| **Languages**               | 'en'             | The languages to use if OCR is needed, separated by commas. Only shown when 'Datalab' is selected as the API endpoint.                                     |
-| **Force OCR**               | `false`          | Force OCR (Activate this when auto-detect often fails, make sure to set the correct languages). Only shown when 'Datalab' is selected as the API endpoint. |
-| **Paginate**                | `false`          | Add horizontal rules between each page. Available for both Datalab and MistralAI endpoints.                                                         |
+| **Languages**               | 'en'             | The languages to use if OCR is needed, separated by commas. Only shown for the Python API endpoints.                                     |
+| **Force OCR**               | `false`          | Force OCR (Activate this when auto-detect often fails, make sure to set the correct languages). Only shown for the Python API endpoints. |
+| **Paginate**                | `false`          | Add horizontal rules between each page. Available for Datalab, Python API and MistralAI endpoints.                                                         |
 | **Image Limit**             | `0`              | Maximum number of images to extract (0 for no limit). Only shown when 'MistralAI' is selected.                                                  |
 | **Image Minimum Size**      | `0`              | Minimum height and width of images to extract (0 for no minimum). Only shown when 'MistralAI' is selected.                                     |
 | **Move PDF to Folder**      | `false`          | Move the PDF to the folder after conversion.                                                        |
@@ -108,6 +110,38 @@ You can convert PDFs to Markdown in multiple ways:
 | **Extract Content**         | 'all'            | Select the content to extract from the PDF. Options: 'Extract everything', 'Text Only', 'Images Only'.                                                     |
 | **Write Metadata**          | `false`          | Write metadata as frontmatter in the Markdown file.                                                                                                        |
 | **Delete Original PDF**     | `false`          | Delete the original PDF after conversion.                                                                                                                  |
+
+### Datalab conversion options
+
+These mirror the options of the [Datalab Convert API](https://documentation.datalab.to/docs/recipes/conversion/conversion-api-overview) and are only shown when 'Datalab' is selected as the API endpoint. Prices are the standard Datalab rates and can change.
+
+| Setting                     | Default          | Description                                                                                                                                                |
+| ----------------------------- | ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Mode**                    | 'balanced'       | Processing mode: 'Fast' ($4/1k pages), 'Balanced' ($4/1k pages, recommended) or 'Accurate' ($10/1k pages). |
+| **Page Range**              | -                | Comma-separated page ranges to process, e.g. `0-2,4` (0-indexed). Overrides maximum pages. For spreadsheets this filters by sheet index. |
+| **Maximum Pages**           | -                | Limit the number of pages to convert. Ignored when a page range is set. |
+| **Track Changes**           | `false`          | Extract tracked changes and comments from DOCX, PDF and image files (+$6/1k pages). |
+| **Chart Understanding**     | `false`          | Extract data from charts and graphs into structured output (+$3/1k pages). |
+| **Extract Links**           | `false`          | Preserve hyperlinks in the converted output. |
+| **New Block Types**         | `false`          | Use newer block types for improved layout and structure detection. |
+| **Extract Bookmarks**       | `false`          | Read the PDF's stored outline into `metadata.pdf_bookmarks` (useful together with 'Write Metadata'). |
+| **Infographic**             | `false`          | Reconstruct infographics and diagrams as structured content. |
+| **Run Eval**                | `false`          | Run an evaluation rubric after each conversion. |
+| **Eval Rubric ID**          | -                | ID of an active eval rubric owned by your Datalab team (created in the Datalab dashboard). |
+| **Merge Cross-page Content**| `false`          | Beta. Merge tables, paragraphs and lists split across pages. Adds a variable compute surcharge (~$0.50 per document). |
+| **Keep Page Header/Footer in Output** | `false` | Include page headers/footers in the converted output. |
+| **Disable Image Extraction**| `false`          | Don't extract images from the document (ignored when 'Extract Content' is set to 'Images Only'). |
+| **Disable Image Captions**  | `false`          | Disable synthetic image captions/descriptions in the output. |
+| **Add Block IDs**           | `false`          | Add `data-block-id` attributes to HTML elements for citation tracking (HTML output only). |
+| **Token-efficient Markdown**| `false`          | Optimize markdown for LLM token usage (compact tables, single-space indents). |
+| **Fence Synthetic Captions**| `false`          | Wrap synthetic image captions in HTML comment markers for easy removal. |
+| **Save HTML Output**        | `false`          | Also save the converted document as an `.html` file next to the markdown file. Required for block IDs and bounding boxes. |
+| **Disable HTML Prettify**   | `false`          | Return compact HTML without added indentation (only applies when saving HTML output). |
+| **Word BBoxes**             | `false`          | Inline per-word bounding boxes and confidence scores into HTML output ($3/1k pages). |
+| **Table Cell BBoxes**       | `false`          | Add per-cell bounding boxes to tables in HTML output (includes word bboxes, $6/1k pages). |
+| **List Item BBoxes**        | `false`          | Add per-item bounding boxes to lists in HTML output (includes word bboxes, $6/1k pages). |
+| **Skip Cache**              | `false`          | Force re-conversion and skip using cached results. |
+| **Save Checkpoint**         | `false`          | Save a checkpoint after conversion so it can be reused by other Datalab endpoints. |
 
 ## 🙏 Acknowledgements
 

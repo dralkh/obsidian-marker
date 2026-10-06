@@ -52,37 +52,3 @@ export class MarkerOkayCancelDialog extends Modal {
     contentEl.empty();
   }
 }
-
-export class MarkerSupportedLangsDialog extends Modal {
-  title: string;
-  message: string;
-  link: string;
-  linkText: string;
-
-  constructor(app: App) {
-    super(app);
-    this.title = 'Supported Languages';
-    this.message =
-      'To see the supported languages, please visit the following link:';
-    this.link =
-      'https://github.com/VikParuchuri/surya/blob/master/surya/languages.py';
-    this.linkText = 'Supported Languages (VikParuchuri/surya)';
-  }
-
-  onOpen() {
-    const { contentEl } = this;
-    contentEl.createEl('h2', { text: this.title });
-    contentEl.createEl('p', {
-      text: this.message,
-    });
-    contentEl.createEl('a', {
-      text: this.linkText,
-      attr: { href: this.link },
-    });
-  }
-
-  onClose() {
-    const { contentEl } = this;
-    contentEl.empty();
-  }
-}
