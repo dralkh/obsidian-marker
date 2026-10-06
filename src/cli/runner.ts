@@ -103,6 +103,17 @@ export async function runCli(
         }
       });
     };
+    // After the agent exits, tear down its whole process group so helper
+    // processes it spawned cannot linger and keep consuming memory. On POSIX the
+    // group id is only reusable while the group is empty, so this cannot hit an
+    // unrelated process.
+    let released = false;
+    const release = (): void => {
+      if (released) return;
+      released = true;
+      if (!child.pid || process.platform === 'win32') return;
+      try { process.kill(-child.pid, 'SIGKILL'); } catch { /* The group already exited. */ }
+    };
     const timer = timeoutMinutes > 0 ? setTimeout(() => { timedOut = true; stop(); }, timeoutMinutes * 60000) : undefined;
     const consume = (text: string): void => {
       // Only parse event envelopes; never persist stdout containing document text or credentials.
@@ -131,8 +142,12 @@ export async function runCli(
     if (signal.aborted) stop();
     const cleanup = (): void => { if (timer) clearTimeout(timer); signal.removeEventListener('abort', stop); };
     child.on('error', () => { cleanup(); reject(new Error('Could not launch the selected CLI')); });
+    // If a helper keeps the stdio pipes open after the agent exits, `close` may
+    // never fire; reap the group shortly after `exit` so the job cannot hang.
+    child.on('exit', () => { const reap = setTimeout(release, 3000); reap.unref?.(); });
     child.on('close', async code => {
       cleanup();
+      release();
       if (stopped) await stopped;
       if (signal.aborted) { reject(new CancelledError()); return; }
       if (timedOut) { reject(new Error('CLI formatting reached the configured timeout')); return; }
