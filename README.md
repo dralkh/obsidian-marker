@@ -47,6 +47,8 @@ Click the conversion status or run **OCR-AI: Recover conversions / view active j
 
 **Advanced** includes an optional timeout (default `0`, wait until completion) and executable overrides saved only on the current device. Agents receive unattended workspace-edit permissions; global CLI configuration is not rewritten. A temporary working directory is not a security sandbox for every CLI. Extraction remains available on mobile, where subprocess formatting is unavailable.
 
+For development, run `npm test` for isolated fake-CLI tests and `npm run build` for type checking and the production bundle. `npm run test:cli` is an optional real-account smoke test: it uses installed agents and their configured models on a small synthetic document, with a 90-second limit per agent.
+
 ## 🛠 Why This Plugin?
 
 1. **Superior Extraction**: Utilizes the Marker project's advanced AI model or MistralAI's powerful OCR for high-quality conversions

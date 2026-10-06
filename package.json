@@ -4,6 +4,8 @@
 	"description": "Convert PDFs to rich Markdown, including images and ocr using the Marker API",
 	"main": "main.js",
 	"scripts": {
+		"test": "node tests/run.mjs",
+		"test:cli": "node tests/smoke.mjs",
 		"dev": "node esbuild.config.mjs",
 		"build": "tsc -noEmit -skipLibCheck && node esbuild.config.mjs production",
 		"version": "node version-bump.mjs"
