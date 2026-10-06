@@ -1,6 +1,7 @@
 import { App, Modal } from 'obsidian';
 
 export class MarkerOkayCancelDialog extends Modal {
+  private submitted = false;
   result: boolean;
   title: string;
   message: string;
@@ -34,7 +35,7 @@ export class MarkerOkayCancelDialog extends Modal {
     });
     yesButton.addEventListener('click', () => {
       this.result = true;
-      this.onSubmit(true);
+      this.submit(true);
       this.close();
     });
     const noButton = buttonContainer.createEl('button', {
@@ -42,13 +43,20 @@ export class MarkerOkayCancelDialog extends Modal {
     });
     noButton.addEventListener('click', () => {
       this.result = false;
-      this.onSubmit(false);
+      this.submit(false);
       this.close();
     });
   }
 
   onClose() {
+    this.submit(false);
     const { contentEl } = this;
     contentEl.empty();
+  }
+
+  private submit(result: boolean) {
+    if (this.submitted) return;
+    this.submitted = true;
+    this.onSubmit(result);
   }
 }

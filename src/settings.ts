@@ -1,8 +1,10 @@
 import { App, PluginSettingTab, Setting } from 'obsidian';
 import Marker from './main';
 import { renderConverterSettings } from './utils/converterSettingsUtils';
+import { FormattingSettings } from './cli/types';
+import { renderCliSettings } from './cli/ui';
 
-export interface MarkerSettings {
+export interface MarkerSettings extends FormattingSettings {
   markerEndpoint: string;
   pythonEndpoint: string;
   createFolder: boolean;
@@ -11,6 +13,7 @@ export interface MarkerSettings {
   writeMetadata: boolean;
   movePDFtoFolder: boolean;
   createAssetSubfolder: boolean;
+  backupRawExtraction: boolean;
   apiEndpoint: string;
   apiKey?: string; // Keep for backward compatibility and selfhosted/python-api
   datalabApiKey?: string; // Specific key for Datalab
@@ -52,6 +55,10 @@ export interface MarkerSettings {
 }
 
 export const DEFAULT_SETTINGS: MarkerSettings = {
+  cliFormattingEnabled: false,
+  cliProvider: '',
+  cliPromptOverride: null,
+  cliTimeoutMinutes: 0,
   markerEndpoint: 'localhost:8000',
   pythonEndpoint: 'localhost:8001',
   createFolder: true,
@@ -60,6 +67,7 @@ export const DEFAULT_SETTINGS: MarkerSettings = {
   writeMetadata: false,
   movePDFtoFolder: false,
   createAssetSubfolder: true,
+  backupRawExtraction: false,
   apiEndpoint: 'selfhosted',
   apiKey: '',
   datalabApiKey: '',
@@ -186,6 +194,21 @@ export class MarkerSettingTab extends PluginSettingTab {
           })
       );
 
+    // setting for keeping the pre-formatting extraction as a .backup file
+    new Setting(containerEl)
+      .setName('Keep raw extraction backup')
+      .setDesc(
+        'Save the unformatted extraction as “<name>.md.backup” in the assets folder.'
+      )
+      .addToggle((toggle) =>
+        toggle
+          .setValue(this.plugin.settings.backupRawExtraction)
+          .onChange(async (value) => {
+            this.plugin.settings.backupRawExtraction = value;
+            await this.plugin.saveSettings();
+          })
+      );
+
     // setting for which content to extract from the pdf
     new Setting(containerEl)
       .setName('Extract content')
@@ -248,5 +271,9 @@ export class MarkerSettingTab extends PluginSettingTab {
     // Initialize settings state
     updateMovePDFSetting(this.plugin.settings.createFolder);
     updateWriteMetadataSetting(this.plugin.settings.extractContent);
+
+    // CLI formatting sits at the end because it is only needed when the user
+    // wants to post-process extractions with a local agent.
+    renderCliSettings(containerEl, this.plugin);
   }
 }

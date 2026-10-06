@@ -1,7 +1,7 @@
 import { App, Notice, TFile, requestUrl, RequestUrlParam } from 'obsidian';
 import { MarkerSettings } from './../settings';
 import { BaseConverter, ConversionResult } from './../converter';
-import { checkForExistingFiles } from '../utils/fileUtils';
+
 import {FormField, MarkerMultipartRequest} from "../utils/multipartUtils";
 
 // Define interfaces for Datalab API responses
@@ -46,14 +46,6 @@ export class DatalabConverter extends BaseConverter {
   ): Promise<boolean> {
     const folderPath = await this.prepareConversion(settings, file);
     if (!folderPath) return false;
-
-    if (
-      (settings.extractContent === 'images' ||
-        settings.extractContent === 'all') &&
-      !(await checkForExistingFiles(app, folderPath))
-    ) {
-      return true;
-    }
 
     if (!settings.datalabApiKey) {
       new Notice('Error: Datalab API key is not configured');
@@ -221,15 +213,12 @@ export class DatalabConverter extends BaseConverter {
         return false;
       }
 
-      await this.processConversionResult(
-        app,
+      return await this.processConversionResult(
         settings,
         conversionResult,
         folderPath,
         file
       );
-      new Notice('Datalab conversion completed successfully');
-      return true;
     } catch (pollError) {
       console.error(
         'Error during Datalab conversion polling:',

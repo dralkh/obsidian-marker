@@ -31,6 +31,21 @@ You can find the related repositories and services here:
 - **Mobile Compatibility**: Works on both desktop and mobile Obsidian apps
 - **Flexible Output**: Choose between full content extraction or specific elements (text/images)
 - **Smart Folder Integration**: If a folder with the PDF's name already exists, the plugin will ask if you want to integrate the new files into the existing folder
+- **Optional CLI Formatting**: Format extracted Markdown with Codex, Claude, Antigravity, Cursor Agent, OpenCode, or Hermes before the completed note appears in your vault
+
+## CLI formatting
+
+On desktop, enable **Format after extraction** in the plugin settings and choose an installed agent. The plugin detects agent executables, including common installations outside Obsidian's desktop PATH. Sign in and select your model using the CLI as usual; the plugin uses that account and the CLI's default model without adding another API key or model setting.
+
+Every extraction provider uses the same formatting step. Each document is staged in its own OS temporary workspace with its attachments. The note is imported and opened after the agent finishes its edits and preservation review. Images-only extraction skips formatting. Optional HTML remains the extraction provider's original output.
+
+The editable prompt starts with the supplied Markdown formatting skill: preserve granular content, improve heading structure, standardize formatting, and remove only truly duplicated footnotes. **Reset prompt** restores the bundled baseline. The host adds the target filename, protected-content rules, review instructions, and completion-report contract. The original skill file does not need to remain installed.
+
+Formatting retries once from the original extraction. If both attempts fail, the plugin imports the untouched extraction and displays a failure notice. The source is kept even when automatic deletion is enabled. Output checks reject missing completion reports, empty documents, changed frontmatter, lost link targets, altered code/math blocks, and disappeared numeric values or unique words. These checks cannot guarantee complete semantic equivalence.
+
+Click the conversion status or run **OCR-AI: Recover conversions / view active jobs** to cancel a job or recover an interrupted conversion. Recovery offers **Retry**, **Import raw**, and **Discard**, and never restarts an agent automatically. Recovered imports keep their source files. Temporary recovery data lives outside the vault and can be removed by OS cleanup.
+
+**Advanced** includes an optional timeout (default `0`, wait until completion) and executable overrides saved only on the current device. Agents receive unattended workspace-edit permissions; global CLI configuration is not rewritten. A temporary working directory is not a security sandbox for every CLI. Extraction remains available on mobile, where subprocess formatting is unavailable.
 
 ## 🛠 Why This Plugin?
 
@@ -107,6 +122,7 @@ You can convert PDFs to Markdown in multiple ways:
 | **Image Minimum Size**      | `0`              | Minimum height and width of images to extract (0 for no minimum). Only shown when 'MistralAI' is selected.                                     |
 | **Move PDF to Folder**      | `false`          | Move the PDF to the folder after conversion.                                                        |
 | **Create Asset Subfolder**  | `true`           | Create an asset subfolder for images.                                                                                                                      |
+| **Keep Raw Extraction Backup** | `false`       | Save the unformatted extraction as `<name>.md.backup` in the assets folder, so CLI formatting never destroys the raw result (`<name>.md.backup` is ignored by Obsidian). |
 | **Extract Content**         | 'all'            | Select the content to extract from the PDF. Options: 'Extract everything', 'Text Only', 'Images Only'.                                                     |
 | **Write Metadata**          | `false`          | Write metadata as frontmatter in the Markdown file.                                                                                                        |
 | **Delete Original PDF**     | `false`          | Delete the original PDF after conversion.                                                                                                                  |
@@ -158,7 +174,7 @@ A huge thank you to these projects for their contributions to the community!
 If you encounter issues related to the plugin itself, please open an issue in this repository. For problems with the conversion process or API, please refer to the Marker and Marker API repositories.
 
 > [!NOTE]
-> When converting multiple files at once, be patient as the process can take a significant amount of time depending on the size and complexity of your PDFs. For very large batches, consider processing them in smaller groups.
+> When converting multiple files at once they run in parallel, so several conversions progress at the same time. Large batches may still be limited by the API endpoint or your machine's resources.
 
 ## 🤝 Contributing
 

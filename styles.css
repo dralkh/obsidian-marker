@@ -201,3 +201,25 @@ If your plugin does not need CSS, delete this file.
     grid-template-columns: 1fr;
   }
 }
+/* CLI formatter settings and job controls. */
+.marker-format-prompt {
+  width: 100%;
+  min-width: 320px;
+  min-height: 260px;
+  font-family: var(--font-monospace);
+  resize: vertical;
+}
+.marker-cli-detection {
+  margin: 0.2em 0 0.6em;
+  font-size: var(--font-ui-smaller);
+  color: var(--text-muted);
+  overflow-wrap: anywhere;
+}
+.marker-cli-advanced { margin-top: 0.8em; }
+.marker-cli-advanced > summary {
+  cursor: pointer;
+  font-size: var(--font-ui-small);
+  font-weight: var(--font-semibold);
+  color: var(--text-muted);
+}
+.marker-job-status { cursor: pointer; }
